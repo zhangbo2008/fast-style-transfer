@@ -14,7 +14,7 @@ def optimize(content_targets, style_target, content_weight, style_weight,
              tv_weight, vgg_path, epochs=2, print_iterations=1000,
              batch_size=4, save_path='saver/fns.ckpt', slow=False,
              learning_rate=1e-3, debug=False):
-    if slow:
+    if slow: #这个是评价函数,还是输入vgg特征来计算图片.
         batch_size = 1
     mod = len(content_targets) % batch_size
     if mod > 0:
@@ -33,9 +33,23 @@ def optimize(content_targets, style_target, content_weight, style_weight,
         style_image_pre = vgg.preprocess(style_image)
         net = vgg.net(vgg_path, style_image_pre)
         style_pre = np.array([style_target])
-        for layer in STYLE_LAYERS:
+
+
+
+
+
+        for layer in STYLE_LAYERS:#利用net里面的layer层.多层提取,效果好.
+            #把风格进行多次提取
             features = net[layer].eval(feed_dict={style_image:style_pre})
             features = np.reshape(features, (-1, features.shape[3]))
+            #把特征拍平成为一个长向量.这样好算个莱姆矩阵.
+
+
+
+
+
+
+
             gram = np.matmul(features.T, features) / features.size
             style_features[layer] = gram
 
@@ -43,28 +57,40 @@ def optimize(content_targets, style_target, content_weight, style_weight,
         X_content = tf.placeholder(tf.float32, shape=batch_shape, name="X_content")
         X_pre = vgg.preprocess(X_content)
 
+        #content图片就是X_pre
         # precompute content features
         content_features = {}
         content_net = vgg.net(vgg_path, X_pre)
+
+
+        #一样还是用vgg19来提取特征.
         content_features[CONTENT_LAYER] = content_net[CONTENT_LAYER]
 
-        if slow:
+        if slow: #慢速生成就是从一个正态分布来弄
             preds = tf.Variable(
                 tf.random_normal(X_content.get_shape()) * 0.256
             )
             preds_pre = preds
-        else:
+        else:#快速就是从原始图片来弄
             preds = transform.net(X_content/255.0)
             preds_pre = vgg.preprocess(preds)
 
         net = vgg.net(vgg_path, preds_pre)
 
+
+
+
         content_size = _tensor_size(content_features[CONTENT_LAYER])*batch_size
         assert _tensor_size(content_features[CONTENT_LAYER]) == _tensor_size(net[CONTENT_LAYER])
+
+
         content_loss = content_weight * (2 * tf.nn.l2_loss(
             net[CONTENT_LAYER] - content_features[CONTENT_LAYER]) / content_size
-        )
+        )#表示生成的最后图片跟原始content图片的区别.
 
+
+
+#风格损失用gram来算. 这个gram损失的算法显然很大,所以需要前面配置一个小的系数
         style_losses = []
         for style_layer in STYLE_LAYERS:
             layer = net[style_layer]
@@ -78,11 +104,27 @@ def optimize(content_targets, style_target, content_weight, style_weight,
 
         style_loss = style_weight * functools.reduce(tf.add, style_losses) / batch_size
 
+
+
+
+
+
+
+
+
+#下面是一个新的创意loss,
         # total variation denoising
         tv_y_size = _tensor_size(preds[:,1:,:,:])
         tv_x_size = _tensor_size(preds[:,:,1:,:])
+
+        #其实本质就是按照行扫描和列扫描,算差.让差别太大.感觉这个loss有点玄学,
+        #就是让图片生成的不是那么的色彩变化过大.
         y_tv = tf.nn.l2_loss(preds[:,1:,:,:] - preds[:,:batch_shape[1]-1,:,:])
         x_tv = tf.nn.l2_loss(preds[:,:,1:,:] - preds[:,:,:batch_shape[2]-1,:])
+
+
+
+
         tv_loss = tv_weight*2*(x_tv/tv_x_size + y_tv/tv_y_size)/batch_size
 
         loss = content_loss + style_loss + tv_loss

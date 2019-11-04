@@ -6,7 +6,7 @@ import scipy.io
 import pdb
 
 MEAN_PIXEL = np.array([ 123.68 ,  116.779,  103.939])
-
+#net就是输入图片,然后vgg输出特征. 这个函数.
 def net(data_path, input_image):
     layers = (
         'conv1_1', 'relu1_1', 'conv1_2', 'relu1_2', 'pool1',
