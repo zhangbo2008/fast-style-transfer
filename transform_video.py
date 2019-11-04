@@ -2,7 +2,7 @@ from __future__ import print_function
 from argparse import ArgumentParser
 import sys
 sys.path.insert(0, 'src')
-import os, random, subprocess, evaluate, shutil
+import os, random, subprocess, main, shutil
 from utils import exists, list_files
 import pdb
 
@@ -48,7 +48,7 @@ def check_opts(opts):
 def main():
     parser = build_parser()
     opts = parser.parse_args()
-    evaluate.ffwd_video(opts.in_path, opts.out, opts.checkpoint, opts.device, opts.batch_size)
+    main.ffwd_video(opts.in_path, opts.out, opts.checkpoint, opts.device, opts.batch_size)
 
  
 if __name__ == '__main__':

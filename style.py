@@ -5,7 +5,7 @@ import numpy as np, scipy.misc
 from optimize import optimize
 from argparse import ArgumentParser
 from utils import save_img, get_img, exists, list_files
-import evaluate
+import main
 
 CONTENT_WEIGHT = 7.5e0
 STYLE_WEIGHT = 1e2
@@ -155,12 +155,12 @@ def main():
             preds_path = '%s/%s_%s.png' % (options.test_dir,epoch,i)
             if not options.slow:
                 ckpt_dir = os.path.dirname(options.checkpoint_dir)
-                evaluate.ffwd_to_img(options.test,preds_path,
-                                     options.checkpoint_dir)
+                main.ffwd_to_img(options.test, preds_path,
+                                 options.checkpoint_dir)
             else:
                 save_img(preds_path, img)
     ckpt_dir = options.checkpoint_dir
-    cmd_text = 'python evaluate.py --checkpoint %s ...' % ckpt_dir
+    cmd_text = 'python main.py --checkpoint %s ...' % ckpt_dir
     print("Training complete. For evaluation:\n    `%s`" % cmd_text)
 
 if __name__ == '__main__':
